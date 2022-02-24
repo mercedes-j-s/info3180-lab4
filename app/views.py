@@ -34,21 +34,40 @@ def upload():
         abort(401)
 
     # Instantiate your form class
-    photo_upload = UploadForm()
+    uploadform = UploadForm()
 
     # Validate file upload on submit
-    if request.method == 'POST' and photo_upload.validate_on_submit():
+    if request.method == 'POST' and uploadform.validate_on_submit():
         print(request.files['photo'])
         app.logger.info('posted')
         # Get file data and save to your uploads folder
-        file = photo_upload.photo.data
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        picture = uploadform.photo.data
+        filename = secure_filename(picture.filename)
+        picture.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         flash('File Saved', 'success')
         return redirect(url_for('home'))
 
-    return render_template('upload.html', form=photo_upload)
+    flash_errors(uploadform)
+    return render_template('upload.html', uploadform = uploadform)
+
+
+
+def get_uploaded_images():
+    uploads = [] 
+    for subdir, dirs, files in os.walk(app.config['UPLOAD_FOLDER']):
+        for file in files: 
+            if file.split('.')[-1] in ('jpg', 'png', 'jpeg'):
+                uploads.append(file)
+    return uploads
+
+@app.route('/files')
+def files():
+    if not session.get('logged_in'):
+        abort(401)
+
+    uploadedImages = get_uploaded_images()
+    return render_template('files.html', uploaded_images = uploadedImages)
 
 
 @app.route('/login', methods=['POST', 'GET'])
